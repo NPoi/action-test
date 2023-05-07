@@ -22,7 +22,8 @@ jobs:
 
       - name: Check File Dependencies
         run: |
-          changed_files=$(git diff --name-only HEAD HEAD~1)
+          git fetch origin ${{ github.base_ref }}:${{ github.base_ref }}
+          changed_files=$(git diff --name-only ${{ github.base_ref }} HEAD)
           commit_message=$(git log --format=%B -n 1 HEAD)
 
           check_dependencies() {
