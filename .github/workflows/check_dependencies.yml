@@ -41,7 +41,7 @@ jobs:
           }
 
           dependencies='[
-            { "main_file": "path/to/main", "dependent_file": "path/to/dependent" }
+            { "main_file": "hoge", "dependent_file": "fuga" }
           ]'
 
           num_dependencies=$(echo "${dependencies}" | jq length)
