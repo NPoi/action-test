@@ -1,0 +1,52 @@
+name: Check File Dependencies
+
+on:
+  pull_request:
+    types:
+      - synchronize
+      - opened
+      - reopened
+
+jobs:
+  check_dependencies:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git jq
+
+      - name: Check File Dependencies
+        run: |
+          changed_files=$(git diff --name-only HEAD HEAD~1)
+          commit_message=$(git log --format=%B -n 1 HEAD)
+
+          check_dependencies() {
+            local main_file="$1"
+            local dependent_file="$2"
+            local bypass_string="checkpass"
+
+            local main_changed=$(echo "${changed_files}" | grep -q "${main_file}"; echo $?)
+            local dependent_changed=$(echo "${changed_files}" | grep -q "${dependent_file}"; echo $?)
+            local bypass_check=$(echo "${commit_message}" | grep -q "${bypass_string}"; echo $?)
+
+            if [ "${main_changed}" -eq 0 ] && [ "${dependent_changed}" -ne 0 ] && [ "${bypass_check}" -ne 0 ]; then
+              echo "Error: ${main_file} was changed, but ${dependent_file} was not."
+              exit 1
+            fi
+          }
+
+          dependencies='[
+            { "main_file": "path/to/main", "dependent_file": "path/to/dependent" }
+          ]'
+
+          num_dependencies=$(echo "${dependencies}" | jq length)
+          for i in $(seq 0 $((${num_dependencies}-1))); do
+            main_file=$(echo "${dependencies}" | jq -r ".[${i}].main_file")
+            dependent_file=$(echo "${dependencies}" | jq -r ".[${i}].dependent_file")
+            check_dependencies "${main_file}" "${dependent_file}"
+          done
